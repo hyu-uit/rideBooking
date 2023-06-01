@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "car-booking",
+    "slug": "car-booking",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thevihuynh.carbooking",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "To select photos from your library"
+      }
+    },
+    "android": {
+      "userInterfaceStyle": "dark",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA",
+        "MEDIA_LIBRARY"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoiZHVjbmd1eWVudHJpIiwiYSI6ImNsZjNkdGY0czAwZnkzdHIwMmpydWJpOTgifQ.SoQYVlwvSEhFn1tehWqPrA"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8671c500-e4a3-4c9d-bb2c-545f179927a1"
+      }
+    },
+    "permissions": ["camera"]
+  }
+}
