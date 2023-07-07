@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Button,
+  FlatList,
   HStack,
   Image,
   Input,
@@ -18,39 +19,203 @@ import { TabView, TabBar, SceneMap } from "react-native-tab-view";
 import IC_Bike_White from "../../../assets/images/Activity/ic_bike_white.png";
 import IC_Bike_Blue from "../../../assets/images/Activity/ic_bike_blue.png";
 import HistoryCard from "../../../components/HistoryCard";
+import { useEffect } from "react";
+import { getFromAsyncStorage } from "../../../helper/asyncStorage";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "../../../config/config";
+import BookingCard from "../../../components/BookingCard/BookingCard";
 
 const ScheduledScreen = ({ navigation }) => {
   const [service, setService] = useState(0);
+  const [phoneNumber, setPhone] = useState(null);
+  const [waitingTrips, setWaitingTrips] = useState({});
+  const [confirmedTrips, setConfirmedTrips] = useState({});
+  const [canceledTrips, setCanceledTrips] = useState({});
+  useEffect(() => {
+    fetchDataAndPhoneNumber();
+  }, [navigation, phoneNumber]);
+
+  const fetchDataAndPhoneNumber = async () => {
+    try {
+      const phoneNumberValue = await getFromAsyncStorage("phoneNumber");
+      setPhone(phoneNumberValue);
+      if (phoneNumberValue) {
+        getWaitingTrips();
+        getConfirmedTrips();
+        getCanceledTrips();
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const getWaitingTrips = () => {
+    console.log(phoneNumber);
+    const waitingTripsQuery = query(
+      collection(db, "ListTrip"),
+      where("isScheduled", "==", "true"),
+      where("idCustomer", "==", phoneNumber)
+    );
+
+    const unsubscribeTrip = onSnapshot(waitingTripsQuery, (querySnapshot) => {
+      const updatedTrips = [];
+      querySnapshot.forEach((doc) => {
+        if (
+          doc.data().status == "waiting" ||
+          doc.data().status == "accepted" ||
+          doc.data().status === "on the way"
+        ) {
+          const trip = {
+            idTrip: doc.id,
+            ...doc.data(),
+          };
+          updatedTrips.push(trip);
+        }
+      });
+      setWaitingTrips(updatedTrips);
+    });
+
+    return () => {
+      unsubscribeTrip();
+    };
+  };
+
+  const getConfirmedTrips = () => {
+    const confirmTripQuery = query(
+      collection(db, "ListTrip"),
+      where("isScheduled", "==", "true"),
+      where("status", "==", "done"),
+      where("idCustomer", "==", phoneNumber)
+    );
+
+    const unsubscribeTrip = onSnapshot(confirmTripQuery, (querySnapshot) => {
+      const updatedTrips = [];
+      querySnapshot.forEach((doc) => {
+        const trip = {
+          idTrip: doc.id,
+          ...doc.data(),
+        };
+        updatedTrips.push(trip);
+      });
+      setConfirmedTrips(updatedTrips);
+    });
+
+    return () => {
+      unsubscribeTrip();
+    };
+  };
+  const getCanceledTrips = () => {
+    const cancelQuery = query(
+      collection(db, "ListTrip"),
+      where("isScheduled", "==", "true"),
+      where("status", "==", "canceled"),
+      where("idCustomer", "==", phoneNumber)
+    );
+
+    const unsubscribeTrip = onSnapshot(cancelQuery, (querySnapshot) => {
+      const updatedTrips = [];
+      querySnapshot.forEach((doc) => {
+        const trip = {
+          idTrip: doc.id,
+          ...doc.data(),
+        };
+        updatedTrips.push(trip);
+      });
+      setCanceledTrips(updatedTrips);
+    });
+
+    return () => {
+      unsubscribeTrip();
+    };
+  };
 
   const FirstRoute = () => (
     <ScrollView>
-      <VStack mt={"17px"} justifyContent={"center"} alignItems={"center"}>
-        <HistoryCard />
-        <HistoryCard />
-        <HistoryCard />
-        <HistoryCard />
-        <HistoryCard />
-        <HistoryCard />
-        <HistoryCard />
-        <HistoryCard />
-      </VStack>
+      <FlatList
+        padding={"10px"}
+        mt={2}
+        horizontal={false}
+        data={waitingTrips}
+        keyExtractor={(item) => item.idTrip}
+        renderItem={({ item }) => {
+          let sta = item.idRider ? 1 : 0;
+          console.log(sta);
+          return (
+            <BookingCard
+              onPress={() => {
+                const data = {
+                  idTrip: "" + item.idTrip,
+                  idRider: "" + item.idRider,
+                };
+                navigation.navigate("ActivityDetail", data);
+              }}
+              sta={sta}
+              trip={item}
+              key={item.idTrip}
+            ></BookingCard>
+          );
+        }}
+      ></FlatList>
     </ScrollView>
   );
 
   const SecondRoute = () => (
     <ScrollView>
-      <VStack mt={"17px"} justifyContent={"center"} alignItems={"center"}>
-        <HistoryCard />
-        <HistoryCard />
-      </VStack>
+      <FlatList
+        padding={"10px"}
+        mt={2}
+        horizontal={false}
+        data={confirmedTrips}
+        keyExtractor={(item) => item.idTrip}
+        renderItem={({ item }) => (
+          <BookingCard
+            sta={1}
+            onPress={() => {
+              const data = {
+                idTrip: "" + item.idTrip,
+                idRider: "" + item.idRider,
+              };
+              navigation.navigate("ActivityDetail", data);
+            }}
+            trip={item}
+            key={item.idTrip}
+          ></BookingCard>
+        )}
+      ></FlatList>
     </ScrollView>
   );
 
   const ThirdRoute = () => (
     <ScrollView>
-      <VStack mt={"17px"} justifyContent={"center"} alignItems={"center"}>
-        <HistoryCard />
-      </VStack>
+      <FlatList
+        padding={"10px"}
+        mt={2}
+        horizontal={false}
+        data={canceledTrips}
+        keyExtractor={(item) => item.idTrip}
+        renderItem={({ item }) => (
+          <BookingCard
+            sta={1}
+            onPress={() => {
+              const data = {
+                idTrip: "" + item.idTrip,
+                idRider: "" + item.idRider,
+              };
+              navigation.navigate("ActivityDetail", data);
+            }}
+            trip={item}
+            key={item.idTrip}
+          ></BookingCard>
+        )}
+      ></FlatList>
     </ScrollView>
   );
 
@@ -71,7 +236,7 @@ const ScheduledScreen = ({ navigation }) => {
     <VStack h={"100%"} paddingY={"20px"} bgColor={COLORS.background}>
       <SafeAreaView>
         <HStack
-          mb={10}
+          mb={5}
           marginX={"10px"}
           alignItems={"center"}
           justifyContent={"center"}
@@ -87,91 +252,8 @@ const ScheduledScreen = ({ navigation }) => {
             Scheduled
           </Text>
         </HStack>
-        <HStack justifyContent={"center"} space={"10px"}>
-          <Button
-            w={"45%"}
-            h={"70px"}
-            borderRadius={20}
-            bgColor={service === 0 ? COLORS.primary : COLORS.tertiary}
-            onPress={() => {
-              setService(0);
-            }}
-          >
-            {/* <Image
-                  src={require("../../../assets/images/Activity/ic_bike.png`")}
-                /> */}
-            <HStack justifyContent={"center"} alignItems={"center"}>
-              {service === 0 ? (
-                <>
-                  <Image
-                    source={IC_Bike_White}
-                    alt="Icon bike"
-                    // Other props here
-                  />
-                </>
-              ) : (
-                <>
-                  <Image
-                    source={IC_Bike_Blue}
-                    alt="Icon bike"
-                    // Other props here
-                  />
-                </>
-              )}
 
-              <Text
-                style={{
-                  ...FONTS.h2,
-                  color: service === 0 ? COLORS.white : COLORS.fourthary,
-                }}
-              >
-                Bike
-              </Text>
-            </HStack>
-          </Button>
-          <Button
-            w={"45%"}
-            h={"70px"}
-            borderRadius={20}
-            bgColor={service === 1 ? COLORS.primary : COLORS.tertiary}
-            onPress={() => {
-              setService(1);
-            }}
-          >
-            {/* <Image
-                  src={require("../../../assets/images/Activity/ic_bike.png`")}
-                /> */}
-            <HStack justifyContent={"center"} alignItems={"center"}>
-              {service === 1 ? (
-                <>
-                  <Image
-                    source={require("../../../assets/images/Activity/ic_send_white.png")}
-                    alt="Icon send"
-                    // Other props here
-                  />
-                </>
-              ) : (
-                <>
-                  <Image
-                    source={require("../../../assets/images/Activity/ic_send_blue.png")}
-                    alt="Icon send"
-                    // Other props here
-                  />
-                </>
-              )}
-              <Text
-                style={{
-                  ...FONTS.h2,
-                  color: service === 1 ? COLORS.white : COLORS.fourthary,
-                }}
-              >
-                Send
-              </Text>
-            </HStack>
-          </Button>
-        </HStack>
-
-        <VStack h={"100%"} mt={"17px"}>
+        <VStack h={"100%"}>
           <TabView
             navigationState={{ index, routes }}
             renderScene={renderScene}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   HStack,
   Image,
@@ -16,13 +16,19 @@ import MapIcon from "../../assets/map_marker_96px.png";
 import barCodeIcon from "../../assets/barcode.png";
 import avatarIcon from "../../assets/avatar.png";
 import callIcon from "../../assets/call-icon.png";
+import { useTranslation } from "react-i18next";
+import {
+  BookingContext,
+  calculateFinalPrice,
+} from "../../context/BookingContext";
 
 const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
+  const { t } = useTranslation();
+  const { booking } = useContext(BookingContext);
   return (
     <View
       bgColor={COLORS.background}
       w={"100%"}
-      h={385}
       borderTopRadius={20}
       shadow={3}
       position={"absolute"}
@@ -41,7 +47,7 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
               flex: 1,
             }}
           >
-            Rider is on the way
+            {t("onTheWay")}
           </Text>
           <TouchableOpacity onPress={onPressInfo}>
             <Image
@@ -56,8 +62,6 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
           </TouchableOpacity>
         </HStack>
         <HStack space={1}>
-          {/* <Avatar source={avatarIcon} ></Avatar> */}
-          {/* <Avatar source={avatarIcon} ></Avatar> */}
           <Center
             style={{
               width: 45,
@@ -82,15 +86,6 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
                 resizeMode: "contain",
               }}
             />
-            {/* <Image
-              alt="avatar"
-              source={avatarIcon}
-              style={{
-                width: 45,
-                height: 45,
-                borderRadius: 45 / 2,
-              }}
-            ></Image> */}
           </Center>
           <VStack
             style={{
@@ -134,7 +129,7 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
                   ...FONTS.body6,
                 }}
               >
-                Bike type
+                {t("inputLicense")}
               </Text>
               <Text
                 style={{
@@ -143,7 +138,7 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
                   ...FONTS.body6,
                 }}
               >
-                Bike number
+                {t("inputType")}
               </Text>
             </VStack>
             <VStack space={1}>
@@ -194,7 +189,7 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
                 fontWeight: "bold",
               }}
             >
-              2km
+              {booking.bookingDetails.distance}km
             </Text>
           </HStack>
           <HStack space={3}>
@@ -214,7 +209,7 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
                 fontWeight: "bold",
               }}
             >
-              5 mins
+              {booking.bookingDetails.time} {t("minutes")}
             </Text>
           </HStack>
         </VStack>
@@ -225,28 +220,23 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
             justifyContent: "center",
           }}
         >
-          <Text
-            style={{
-              paddingTop: 3,
-              color: COLORS.white,
-              ...FONTS.h2,
-              ...FONTS.h2,
-              fontWeight: "bold",
-            }}
-          >
-            20.000đ
+          <Text fontSize={SIZES.h2} color={"white"} bold>
+            {calculateFinalPrice(
+              booking.bookingDetails.price,
+              booking.bookingDetails.promotion
+            )}
+            đ
           </Text>
-          <Text
-            style={{
-              color: COLORS.grey,
-              ...FONTS.h5,
-              ...FONTS.h5,
-              fontWeight: "bold",
-              textDecorationLine: "line-through",
-            }}
-          >
-            30,000đ
-          </Text>
+          {booking.bookingDetails.promotion > 0 ? (
+            <Text
+              fontSize={SIZES.h5}
+              color={"#808080"}
+              strikeThrough
+              textAlign={"right"}
+            >
+              {booking.bookingDetails.price}đ
+            </Text>
+          ) : null}
         </VStack>
       </HStack>
       <HStack
@@ -301,7 +291,7 @@ const WaitingRiderCard = ({ onPressInfo, onPressCancel }) => {
                 fontWeight: "bold",
               }}
             >
-              Cancel
+              {t("cancel")}
             </Text>
           </TouchableOpacity>
         </HStack>

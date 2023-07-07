@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   Center,
   Divider,
@@ -17,13 +16,22 @@ import ClockIcon from "../../assets/clock_96px.png";
 import MapIcon from "../../assets/map_marker_96px.png";
 import BackIcon from "../../assets/back_icon.png";
 import { COLORS, SIZES } from "../../constants/theme";
+import { useTranslation } from "react-i18next";
+import {
+  BookingContext,
+  calculateFinalPrice,
+} from "../../context/BookingContext";
+import { useContext } from "react";
+import { isNullOrEmpty } from "../../helper/helper";
 
 const LocationCardCost = ({ onClickContinue, onPressBack }) => {
+  const { t } = useTranslation();
+  const { booking } = useContext(BookingContext);
+
   return (
     <View
       bgColor={COLORS.background}
       w={"100%"}
-      h={370}
       borderTopRadius={20}
       shadow={3}
       position={"absolute"}
@@ -32,22 +40,26 @@ const LocationCardCost = ({ onClickContinue, onPressBack }) => {
     >
       <VStack space={4}>
         <HStack w={"100%"}>
-          <VStack space={2}>
+          <VStack space={2} width={"90%"}>
             <VStack space={1}>
               <Text bold fontSize={SIZES.h6} color={"#8CC3FF"}>
-                Pick-up
+                {t("pickUp")}
               </Text>
               <Text bold fontSize={SIZES.h6} color={"white"}>
-                Long An
+                {isNullOrEmpty(booking.pickUpLocation.address)
+                  ? booking.pickUpLocation.address
+                  : booking.pickUpLocation.name}
               </Text>
             </VStack>
             <Divider />
             <VStack space={1}>
               <Text bold fontSize={SIZES.h6} color={"#8CC3FF"}>
-                Destination
+                {t("des")}
               </Text>
               <Text bold fontSize={SIZES.h6} color={"white"}>
-                University of Information Technology
+                {isNullOrEmpty(booking.destinationLocation.address)
+                  ? booking.destinationLocation.address
+                  : booking.destinationLocation.name}
               </Text>
             </VStack>
           </VStack>
@@ -87,7 +99,7 @@ const LocationCardCost = ({ onClickContinue, onPressBack }) => {
                 alignSelf={"center"}
               />
               <Text fontSize={SIZES.h4} color={"white"} bold>
-                2km
+                {booking.bookingDetails.distance}km
               </Text>
             </HStack>
             <HStack space={3}>
@@ -99,22 +111,30 @@ const LocationCardCost = ({ onClickContinue, onPressBack }) => {
                 alignSelf={"center"}
               />
               <Text fontSize={SIZES.h4} color={"white"} bold>
-                5mins
+                {booking.bookingDetails.time} {t("minutes")}
               </Text>
             </HStack>
           </VStack>
           <VStack marginLeft={"auto"}>
             <Text fontSize={SIZES.h2} color={"white"} bold>
-              20,000đ
+              {parseInt(
+                calculateFinalPrice(
+                  booking.bookingDetails.price,
+                  booking.bookingDetails.promotion
+                )
+              ).toLocaleString()}
+              đ
             </Text>
-            <Text
-              fontSize={SIZES.h5}
-              color={"#808080"}
-              strikeThrough
-              textAlign={"right"}
-            >
-              20,000đ
-            </Text>
+            {booking.bookingDetails.promotion > 0 ? (
+              <Text
+                fontSize={SIZES.h5}
+                color={"#808080"}
+                strikeThrough
+                textAlign={"right"}
+              >
+                {parseInt(booking.bookingDetails.price).toLocaleString()}đ
+              </Text>
+            ) : null}
           </VStack>
         </HStack>
         <HStack>
@@ -136,7 +156,7 @@ const LocationCardCost = ({ onClickContinue, onPressBack }) => {
             onTouchEnd={onClickContinue}
           >
             <Text color={"white"} bold fontSize={SIZES.small}>
-              Continue
+              {t("continue")}
             </Text>
           </Button>
         </HStack>

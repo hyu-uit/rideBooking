@@ -14,13 +14,17 @@ import { COLORS, FONTS } from "../../constants/theme";
 import locationLineIcon from "../../assets/location-line.png";
 import { useState } from "react";
 import { useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, increment, updateDoc } from "firebase/firestore";
 import { db } from "../../config/config";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { saveToAsyncStorage } from "../../helper/asyncStorage";
 
-function PopUpRequestCard (props){
+function PopUpRequestCard(props) {
   //const {trip} = props
   let {
     idCustomer,
+    idRider,
     idTrip,
     pickUpLat,
     pickUpLong,
@@ -30,42 +34,62 @@ function PopUpRequestCard (props){
     time,
     status,
     totalPrice,
-    distance
-  } = props.trip
-  const [name, setName] = useState("")
+    distance,
+    est,
+    destAddress,
+    pickUpAddress,
+  } = props.trip;
 
-  // useEffect(()=>{
-  //   getNameCustomer()
-  // }, [])
+  const [name, setName] = useState("");
+  const [state, setState] = useState(0);
+  const { navigation, phoneNumber , setIsRiderReceived } = props;
+  const [isModalVisible, setModalVisible] = useState(false);
+  // const { randomTrips, setNewCurrentTrips, setCount } = props;
+  const { t } = useTranslation();
 
-  // const getNameCustomer=()=>{
-  //   getDoc(doc(db,"ListTrip",idTrip)).then(tripData=>{
-  //     if(tripData.exists()){
-  //       let getIDCus=tripData.data().idCustomer
-  //       getDoc(doc(db,"Customer",idCustomer)).then(docData=>{
-  //         if(docData.exists()){
-  //           setName(docData.data().displayName)
-  //         }
-  //       })
-  //     }
-  //   })
-  
-  // }
-  const onClickAccept= ()=>{
-
+  useEffect(() => {
+    if (!isModalVisible) {
+      setModalVisible(false); // Đóng modal
+    }
+  }, [isModalVisible]);
+  if (idTrip !== undefined) {
+    getDoc(doc(db, "ListTrip", idTrip)).then((tripData) => {
+      if (tripData.exists()) {
+        getDoc(doc(db, "Customer", tripData.data().idCustomer)).then(
+          (docData) => {
+            if (docData.exists()) {
+              setName(docData.data().displayName);
+            }
+          }
+        );
+      }
+    });
   }
-  const onClickReject= ()=>{
 
-  }
+  const setStatusAccept = () => {
+    updateDoc(doc(db, "ListTrip", idTrip), {
+      status: "accepted",
+      idRider: phoneNumber,
+    });
+    const data = { idTrip: "" + idTrip, state: 1 };
+    navigation.navigate("TripDetail", data);
+    saveToAsyncStorage("riderTripId", idTrip);
+    setIsRiderReceived(true)
+  };
+
+  const { handleStatusReject } = props;
+
+  const setStatusReject = () => {
+    handleStatusReject();
+  };
+
   return (
     <View
       bgColor={COLORS.fourthary}
       w={"100%"}
-      h={303}
-      borderTopRadius={20}
+      h={"2/5"}
+      borderRadius={20}
       shadow={3}
-      position={"absolute"}
-      bottom={0}
     >
       <VStack paddingLeft={26} paddingRight={26}>
         <HStack marginTop={4} alignItems={"center"}>
@@ -79,15 +103,6 @@ function PopUpRequestCard (props){
             >
               {name}
             </Text>
-            <Text
-              color={COLORS.lightGrey}
-              style={{
-                ...FONTS.body6,
-                marginLeft: 5,
-              }}
-            >
-              {idTrip}
-            </Text>
           </HStack>
           <View>
             <Text
@@ -97,41 +112,61 @@ function PopUpRequestCard (props){
                 alignItems: "flex-end",
               }}
             >
-              {totalPrice}
+              {parseInt(totalPrice).toLocaleString()}đ
             </Text>
           </View>
         </HStack>
+        <Text
+          color={COLORS.lightGrey}
+          style={{
+            ...FONTS.body6,
+          }}
+        >
+          {idTrip}
+        </Text>
         <HStack>
           <Text style={styles.detailText}>{distance}</Text>
-          <Text style={styles.detailTextNotBold}> - You’re </Text>
-          <Text style={styles.detailText}>0h 15m</Text>
-          <Text style={styles.detailTextNotBold}> away</Text>
+          <Text style={styles.detailText}> - {est}</Text>
+          <Text style={styles.detailTextNotBold}> minute(s)</Text>
         </HStack>
       </VStack>
       <View
         bgColor={COLORS.tertiary}
         w={"100%"}
-        h={230}
-        borderTopRadius={20}
+        h={210}
+        borderRadius={20}
         position={"absolute"}
         bottom={0}
       >
-        <VStack marginTop={8}>
-          <HStack alignItems={"center"}>
-            <Image alt="location line" source={locationLineIcon}></Image>
+        <VStack marginTop={4} padding={2}>
+          <HStack alignItems={"center"} w={"100%"}>
             <VStack space={5}>
-              <VStack>
-                <Text style={styles.detailText}>KTX Khu B</Text>
-                <Text style={styles.titleText}>
-                  Pickup - KTX Khu B ĐHQG, Đông Hòa, Dĩ An, Bình Dương
+              <HStack alignItems={"center"}>
+                <Ionicons
+                  name={"location-outline"}
+                  size={20}
+                  color={COLORS.white}
+                />
+                <Text
+                  style={styles.titleText}
+                  w={"90%"}
+                  numberOfLines={2}
+                  ml={2}
+                >
+                  {pickUpAddress}
                 </Text>
-              </VStack>
-              <VStack>
-                <Text style={styles.detailText}>UIT</Text>
-                <Text style={styles.titleText}>
-                  Destination - Trường Đại học Công nghệ Thông tin - ĐHQG TP..
+              </HStack>
+              <HStack alignItems={"center"}>
+                <Ionicons name={"pin-outline"} size={20} color={COLORS.white} />
+                <Text
+                  style={styles.titleText}
+                  w={"90%"}
+                  numberOfLines={2}
+                  ml={2}
+                >
+                  {destAddress}
                 </Text>
-              </VStack>
+              </HStack>
             </VStack>
           </HStack>
           <HStack
@@ -139,17 +174,16 @@ function PopUpRequestCard (props){
               marginHorizontal: 26,
               marginVertical: 15,
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
             }}
           >
             <TouchableOpacity
-              onPress={() => {
-                onClickReject;
-              }}
+              onPress={setStatusReject}
               style={{
                 borderColor: COLORS.red,
-                height: 59,
-                width: 155,
+                height: 50,
+                // maxWidth: "50%",
+                width: "45%",
                 borderWidth: 1,
                 borderRadius: 20,
                 justifyContent: "center",
@@ -165,44 +199,34 @@ function PopUpRequestCard (props){
                 Reject
               </Text>
             </TouchableOpacity>
-            <View
+            <TouchableOpacity
+              onPress={setStatusAccept}
               style={{
-                flex: 1,
-                justifyContent: "flex-end",
-                alignItems: "flex-end",
+                borderColor: COLORS.primary,
+                backgroundColor: COLORS.primary,
+                height: 50,
+                width: "45%",
+                borderWidth: 1,
+                borderRadius: 20,
+                justifyContent: "center",
+                alignItems: "center",
               }}
             >
-              <TouchableOpacity
-                onPress={() => {
-                  onClickAccept;
-                }}
-                style={{
-                  borderColor: COLORS.primary,
-                  backgroundColor: COLORS.primary,
-                  height: 59,
-                  width: 155,
-                  borderWidth: 1,
-                  borderRadius: 20,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
+              <Text
+                bold
+                color={COLORS.white}
+                fontSize={20}
+                styles={{ ...FONTS.h3 }}
               >
-                <Text
-                  bold
-                  color={COLORS.white}
-                  fontSize={20}
-                  styles={{ ...FONTS.h3 }}
-                >
-                  Accept
-                </Text>
-              </TouchableOpacity>
-            </View>
+                Accept
+              </Text>
+            </TouchableOpacity>
           </HStack>
         </VStack>
       </View>
     </View>
   );
-};
+}
 const styles = StyleSheet.create({
   titleText: {
     color: COLORS.grey,

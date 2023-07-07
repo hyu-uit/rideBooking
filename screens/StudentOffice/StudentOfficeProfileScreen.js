@@ -5,6 +5,7 @@ import {
   Image,
   NativeBaseProvider,
   ScrollView,
+  Select,
   Text,
   VStack,
   View,
@@ -14,48 +15,55 @@ import ButtonBack from "../../components/Global/ButtonBack/ButtonBack";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, FONTS, SIZES } from "../../constants";
 import { useEffect } from "react";
-import { getFromAsyncStorage } from "../../helper/asyncStorage";
+import { getFromAsyncStorage, removeValue } from "../../helper/asyncStorage";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../config/config";
+import { useTranslation } from "react-i18next";
+import i18next from "i18next";
 
 const StudentOfficeProfileScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [uniName, setUniName] = useState(null);
   const [address, setAddress] = useState(null);
   const [logo, setLogo] = useState(null);
+  const { t } = useTranslation();
+  const [language, setLanguage] = useState(i18next.language);
+  const [imgUri, setImgUri] = useState(null);
 
   useEffect(() => {
-    getFromAsyncStorage("phoneNumber")
-      .then((value) => setPhoneNumber(value))
-      .catch((err) => console.log(err));
-    fetchData();
+    if (language === "vi") {
+      setImgUri(
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Flag_of_Vietnam.svg/2000px-Flag_of_Vietnam.svg.png"
+      );
+    } else {
+      setImgUri(
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Flag_of_the_United_Kingdom_%281-2%29.svg/1200px-Flag_of_the_United_Kingdom_%281-2%29.svg.png"
+      );
+    }
+    fetchDataAndPhoneNumber();
   });
+  const fetchDataAndPhoneNumber = async () => {
+    try {
+      const phoneNumberValue = await getFromAsyncStorage("phoneNumber");
+      setPhoneNumber(phoneNumberValue);
 
-  const fetchData = async () => {
-    console.log(phoneNumber);
-    getDoc(doc(db, "StudentOffice", phoneNumber))
-      .then((docData) => {
-        if (docData.exists()) {
-          // AsyncStorage.setItem("phoneNumber", phoneNumber);
-          // AsyncStorage.setItem("role", getRole);
-          setUniName(docData.data().name);
-          setAddress(docData.data().address);
-          setLogo(docData.data().logo);
-        } else {
-          Alert.alert("Wrong phone number!");
-          console.log("no such data");
-        }
-      })
-      .catch((error) => {});
-    // try {
-    //   await GetInfo(); // Wait for GetInfo to complete before proceeding
-    //   const docData = await getDoc(doc(db, "StudentOffice", phoneNumber));
-    //   setUniName(docData.data().name);
-    //   setAcronym(docData.data().acronym);
-    //   setLogo(docData.data().logo);
-    // } catch (error) {
-    //   console.log(error);
-    // }
+      if (phoneNumberValue) {
+        fetchData(phoneNumberValue);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const fetchData = async (phoneNumber) => {
+    try {
+      const docData = await getDoc(doc(db, "StudentOffice", phoneNumber));
+      setUniName(docData.data().name);
+      setLogo(docData.data().logo);
+      setAddress(docData.data().address);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -64,7 +72,9 @@ const StudentOfficeProfileScreen = ({ navigation }) => {
         <VStack paddingX={"10px"} h={"100%"}>
           <HStack justifyContent={"center"}>
             <View style={{ position: "absolute", left: 0 }}></View>
-            <Text style={{ ...FONTS.h2, color: COLORS.white }}>Profile</Text>
+            <Text style={{ ...FONTS.h2, color: COLORS.white }}>
+              {t("profile")}
+            </Text>
           </HStack>
 
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -81,17 +91,49 @@ const StudentOfficeProfileScreen = ({ navigation }) => {
 
             <VStack>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Name
+                {t("name")}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.white }} mt={2}>
                 {uniName}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Address
+                {t("address")}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.white }} mt={2}>
                 {address}
               </Text>
+              <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
+                {t("language")}
+              </Text>
+              <HStack alignItems={"center"} mt={2}>
+                <Image
+                  source={{
+                    uri: imgUri,
+                  }}
+                  alt="hi"
+                  w={8}
+                  h={5}
+                />
+                <Select
+                  alignSelf={"flex-end"}
+                  w={"150px"}
+                  h={"50px"}
+                  borderColor={"transparent"}
+                  style={{ ...FONTS.body3 }}
+                  color={COLORS.white}
+                  onValueChange={(itemValue) => {
+                    setLanguage(itemValue);
+                    i18next.changeLanguage(itemValue);
+                  }}
+                  selectedValue={language}
+                  _selectedItem={{
+                    bg: COLORS.fifthary,
+                  }}
+                >
+                  <Select.Item label={t("en")} value="en" />
+                  <Select.Item label={t("vi")} value="vi" />
+                </Select>
+              </HStack>
             </VStack>
 
             <Button
@@ -100,13 +142,15 @@ const StudentOfficeProfileScreen = ({ navigation }) => {
               borderRadius={20}
               bgColor={COLORS.primary}
               onPress={() => {
+                removeValue("phoneNumber");
+                removeValue("role");
                 navigation.navigate("AuthenticationStack", {
                   screen: "Login",
                 });
               }}
             >
               <Text style={{ ...FONTS.h2 }} color={COLORS.white}>
-                Log out
+                {t("logout")}
               </Text>
             </Button>
           </ScrollView>

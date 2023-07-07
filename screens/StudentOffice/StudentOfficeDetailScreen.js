@@ -14,7 +14,7 @@ import {
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonBack from "../../components/Global/ButtonBack/ButtonBack";
-import { PixelRatio } from "react-native";
+import { Dimensions, PixelRatio } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RejectModal from "../../components/Modal/RejectModal";
 import {
@@ -26,17 +26,24 @@ import {
 } from "firebase/firestore";
 import { db } from "../../config/config";
 import { Alert } from "react-native";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
+import { useTranslation } from "react-i18next";
 
 const StudentOfficeDetailScreen = ({ navigation, route }) => {
+  const contentHeight = Dimensions.get("window").height;
   // const [phoneNumber, setPhoneNumber] = useState("");
   // const [role, setRole] = useState("");
   const [school, setSchool] = useState("");
-  const [portrait, setPortrait] = useState("");
-  const [cardBack, setCardBack] = useState("");
-  const [cardFront, setCardFront] = useState("");
+  const [portrait, setPortrait] = useState(null);
+  const [cardBack, setCardBack] = useState(null);
+  const [cardFront, setCardFront] = useState(null);
   const [studentID, setStudentID] = useState("");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [modal, setModal] = useState(false);
+
+  const { t } = useTranslation();
 
   const { phoneNumber, role } = route.params;
   useEffect(() => {
@@ -44,32 +51,23 @@ const StudentOfficeDetailScreen = ({ navigation, route }) => {
   }, []);
 
   const getUserByPhoneNumber = () => {
-    // setRole("Customer")
-    // setPhoneNumber("0393751403")
-    //getDoc(doc(db,"Customer" , "0393751403"))
-    let imgUrl = "";
     getDoc(doc(db, role, phoneNumber)).then((docSnap) => {
       if (docSnap.exists()) {
-        //setRole(role)
+        //setRole(role)r
         setCardBack(docSnap.data().cardBack);
         setCardFront(docSnap.data().cardFront);
         setDisplayName(docSnap.data().displayName);
         setEmail(docSnap.data().email);
-        //setPhoneNumber(docSnap.id)
-        imgUrl = docSnap.data().portrait;
+        setBirthday(docSnap.data().birthday);
         setSchool(docSnap.data().school);
         setStudentID(docSnap.data().studentID);
-        //console.log(docSnap.data().portrait)
-        imgUrl = docSnap.data().portrait;
-        console.log(cardFront);
-        console.log(cardBack);
+        setPortrait(docSnap.data().portrait);
       } else {
         console.log("No such data");
       }
-      setPortrait(imgUrl);
     });
-    console.log(imgUrl);
   };
+
   const width = 224;
   const height = width * 1.5;
 
@@ -77,33 +75,61 @@ const StudentOfficeDetailScreen = ({ navigation, route }) => {
   const IDHeight = IDWidth * (2 / 3);
 
   const acceptRequest = () => {
-    updateDoc(doc(db, role, phoneNumber), {
-      status: "active",
-    });
-    navigation.navigate("StudentOffice");
+    Alert.alert(t("sure"), "", [
+      {
+        text: t("cancel"),
+        onPress: () => {},
+      },
+      {
+        text: "OK",
+        onPress: () => {
+          updateDoc(doc(db, role, phoneNumber), {
+            status: "active",
+          });
+          navigation.navigate("StudentOffice");
+        },
+      },
+    ]);
   };
 
   const rejectRequest = () => {
-    deleteDoc(doc(db, role, phoneNumber));
-    navigation.navigate("StudentOffice");
+    setModal(true);
+    // deleteDoc(doc(db, role, phoneNumber));
+    // navigation.navigate("StudentOffice");
   };
+
+  const onClose = () => {
+    setModal(false);
+  };
+
   return (
-    <VStack h={"100%"} bgColor={COLORS.background}>
+    <VStack h={contentHeight} bgColor={COLORS.background}>
       <SafeAreaView>
+        <RejectModal
+          isShow={modal}
+          onClose={onClose}
+          phoneNumber={phoneNumber}
+          role={role}
+          navigation={navigation}
+        ></RejectModal>
         <VStack h={"100%"} mt={"17px"} paddingX={"10px"}>
           <HStack mb={2} alignItems={"center"} justifyContent={"center"}>
             <View style={{ position: "absolute", left: 0 }}>
-              <ButtonBack></ButtonBack>
+              <ButtonBack
+                onPress={() => {
+                  navigation.goBack();
+                }}
+              ></ButtonBack>
             </View>
             <Text style={{ ...FONTS.h2, color: COLORS.white }} ml={4}>
-              Student Information
+              {t("studentInfo")}
             </Text>
           </HStack>
 
           <ScrollView showsVerticalScrollIndicator={false}>
             <VStack mt={8} pb={10}>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }}>
-                Portrait picture
+                {t("portrait")}
               </Text>
 
               <View
@@ -120,67 +146,70 @@ const StudentOfficeDetailScreen = ({ navigation, route }) => {
                   h={height + "px"}
                   alt="portrait"
                   source={{
-                    uri: "https://firebasestorage.googleapis.com/v0/b/ride-booking-8d9af.appspot.com/o/0848867679face?alt=media&token=d3af0a62-3a38-4bf2-9345-a4e61c4d656f",
+                    uri: portrait,
                   }}
                 ></Image>
               </View>
 
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Role
+                {t("role")}
               </Text>
               <Text style={{ ...FONTS.h3, color: COLORS.white }} mt={2}>
                 {role}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Full name
+                {t("fullName")}
               </Text>
               <Text style={{ ...FONTS.h3, color: COLORS.white }} mt={2}>
                 {displayName}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Birthday
+                {t("birthday")}
               </Text>
               <Text style={{ ...FONTS.h3, color: COLORS.white }} mt={2}>
-                23/03/2002
+                {birthday}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Student ID
+                {t("id")}
               </Text>
               <Text style={{ ...FONTS.h3, color: COLORS.white }} mt={2}>
                 {studentID}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                School
+                {t("school")}
               </Text>
               <Text style={{ ...FONTS.h3, color: COLORS.white }} mt={2}>
                 {school}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Phone number
+                {t("phone")}
               </Text>
               <Text style={{ ...FONTS.h3, color: COLORS.white }} mt={2}>
                 {phoneNumber}
               </Text>
               <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
-                Email Address
+                {t("email")}
               </Text>
               <Text style={{ ...FONTS.h3, color: COLORS.white }} mt={2}>
                 {email}
               </Text>
 
+              <Text style={{ ...FONTS.h4, color: COLORS.fifthary }} mt={10}>
+                {t("idImages")}
+              </Text>
               <View
                 h={IDHeight + "px"}
                 w={IDWidth + "px"}
                 bgColor={COLORS.fifthary}
                 borderRadius={10}
-                mt={10}
+                mt={2}
               >
                 <Image
                   h={IDHeight + "px"}
                   w={IDWidth + "px"}
                   alt="cardFront"
                   source={{
-                    uri: "https://firebasestorage.googleapis.com/v0/b/ride-booking-8d9af.appspot.com/o/0848867679front?alt=media&token=ee7995d9-a538-44a1-b98a-ff8d7f674a59",
+                    uri: cardFront,
                   }}
                 ></Image>
               </View>
@@ -196,23 +225,12 @@ const StudentOfficeDetailScreen = ({ navigation, route }) => {
                   w={IDWidth + "px"}
                   alt="cardBack"
                   source={{
-                    uri: "https://firebasestorage.googleapis.com/v0/b/ride-booking-8d9af.appspot.com/o/0848867679back?alt=media&token=2ef403f8-ec7a-4296-83bf-5f381514d7af",
+                    uri: cardBack,
                   }}
                 ></Image>
               </View>
 
-              <HStack justifyContent={"space-between"}>
-                <Button
-                  w={"48%"}
-                  borderRadius={20}
-                  bgColor={COLORS.primary}
-                  onPress={acceptRequest}
-                  mt={10}
-                >
-                  <Text style={{ ...FONTS.h2 }} color={COLORS.white}>
-                    Accept
-                  </Text>
-                </Button>
+              <HStack justifyContent={"space-between"} mb={10}>
                 <Button
                   w={"48%"}
                   variant={"outline"}
@@ -222,7 +240,18 @@ const StudentOfficeDetailScreen = ({ navigation, route }) => {
                   mt={10}
                 >
                   <Text style={{ ...FONTS.h2 }} color={COLORS.red}>
-                    Reject
+                    {t("reject")}
+                  </Text>
+                </Button>
+                <Button
+                  w={"48%"}
+                  borderRadius={20}
+                  bgColor={COLORS.primary}
+                  onPress={acceptRequest}
+                  mt={10}
+                >
+                  <Text style={{ ...FONTS.h2 }} color={COLORS.white}>
+                    {t("accept")}
                   </Text>
                 </Button>
               </HStack>

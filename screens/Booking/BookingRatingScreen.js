@@ -4,103 +4,42 @@ import RatingPopup from "../../components/RatingPopup";
 import styled from "styled-components";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView from "react-native-maps";
+import { useTranslation } from "react-i18next";
+import { VStack } from "native-base";
+import { COLORS } from "../../constants";
+import { BookingContext } from "../../context/BookingContext";
+import { useContext } from "react";
+import { Marker } from "react-native-svg";
 
-const NotYetRated = {
-  isGroupButtonShow: false,
-  buttonText: "Skip",
-};
+const BookingRatingScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
+  const { booking } = useContext(BookingContext);
+  const { idRider } = route.params;
 
-const IsRating = {
-  isGroupButtonShow: true,
-  buttonText: "Send",
-};
-const Rated = {
-  isGroupButtonShow: false,
-  buttonText: "Go back",
-};
-
-const initialState = {
-  step: 1,
-};
-
-const SET_STEP_ACTION = "SET_STEP";
-// const SET_IS_GROUP_BUTTON_SHOW_ACTION = "SET_IS_GROUP_BUTTON_SHOW";
-// const SET_BUTTON_TEXT_ACTION = "SET_BUTTON_TEXT";
-// const SET_ON_PRESS_BUTTON = "SET_ON_PRESS_BUTTON";
-
-const stateReducer = (state, action) => {
-  switch (action.type) {
-    case SET_STEP_ACTION:
-      return { ...state, step: action.payload };
-    // case SET_IS_GROUP_BUTTON_SHOW_ACTION:
-    //   return { ...state, isGroupButtonShow: action.payload };
-    // case SET_BUTTON_TEXT_ACTION:
-    //   return { ...state, buttonText: action.payload };
-    // case SET_ON_PRESS_BUTTON:
-    //   return { ...state, onPressButton: action.payload };
-    default:
-      throw new Error();
-  }
-};
-
-const BookingRatingScreen = () => {
-  const [state, dispatch] = useReducer(stateReducer, initialState);
-
-  const handleStep1Button = () => {
-    // Do any necessary form validation or error checking here
-    dispatch({ type: "SET_STEP", payload: 2 });
-  };
-  const handleStep2Button = () => {
-    // Do any necessary form validation or error checking here
-    dispatch({ type: "SET_STEP", payload: 3 });
-  };
-  const handleStep3Button = () => {
-    // Do any necessary form validation or error checking here
-    dispatch({ type: "SET_STEP", payload: 1 });
-  };
-
-  const renderStepContent = () => {
-    switch (state.step) {
-      case 1:
-        return (
-          <>
-            <MapView style={{ flex: 1 }} provider="google"></MapView>
-            <RatingPopup
-              onPress={handleStep1Button}
-              buttonText={NotYetRated.buttonText}
-              isGroupButtonShow={NotYetRated.isGroupButtonShow}
-            />
-          </>
-        );
-      case 2:
-        return (
-          <>
-            <MapView style={{ flex: 1 }} provider="google"></MapView>
-            <RatingPopup
-              onPress={handleStep2Button}
-              buttonText={IsRating.buttonText}
-              isGroupButtonShow={IsRating.isGroupButtonShow}
-            />
-          </>
-        );
-      case 3:
-        return (
-          <>
-            <MapView style={{ flex: 1 }} provider="google"></MapView>
-            <RatingPopup
-              onPress={handleStep3Button}
-              buttonText={Rated.buttonText}
-              isGroupButtonShow={Rated.isGroupButtonShow}
-            />
-          </>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return <BookingContainer>{renderStepContent()}</BookingContainer>;
+  console.log(idRider);
+  return (
+    <VStack h={"100%"} w={"100%"} bgColor={COLORS.background}>
+      <BookingContainer>
+        <MapView
+          style={{ height: "50%", borderRadius: 10 }}
+          provider="google"
+          region={booking.region}
+        >
+          <Marker
+            key={"destination"}
+            coordinate={booking.destinationLocation}
+            title={"Destination"}
+            description={
+              booking.destinationLocation.address
+                ? booking.destinationLocation.address
+                : null
+            }
+          />
+        </MapView>
+        <RatingPopup idRider={idRider} navigation={navigation} />
+      </BookingContainer>
+    </VStack>
+  );
 };
 
 const BookingContainer = styled(SafeAreaView)`
